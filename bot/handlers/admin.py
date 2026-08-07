@@ -1,4 +1,4 @@
-import logging
+﻿import logging
 
 from aiogram import F, Router
 from aiogram.filters import Command
@@ -70,19 +70,19 @@ async def _show_list(callback: CallbackQuery, status: str | None, page: int) -> 
 
 
 @router.callback_query(AdminCB.filter(F.action.in_({"all", "list", "next", "prev"})))
-async def adm_list(callback: CallbackQuery, query_data: AdminCB) -> None:
+async def adm_list(callback: CallbackQuery, callback_data: AdminCB) -> None:
     if not is_admin(callback.from_user.id):
         await callback.answer("⛔ Нет доступа", show_alert=True)
         return
-    await _show_list(callback, query_data.status or None, query_data.page)
+    await _show_list(callback, callback_data.status or None, callback_data.page)
 
 
 @router.callback_query(AdminCB.filter(F.action == "details"))
-async def adm_details(callback: CallbackQuery, query_data: AdminCB) -> None:
+async def adm_details(callback: CallbackQuery, callback_data: AdminCB) -> None:
     if not is_admin(callback.from_user.id):
         await callback.answer("⛔ Нет доступа", show_alert=True)
         return
-    pay = await db.get_payment(query_data.payment_id)
+    pay = await db.get_payment(callback_data.payment_id)
     if not pay:
         await callback.message.edit_text("❌ Чек не найден.", reply_markup=admin_panel_kb())
         await callback.answer()
@@ -95,11 +95,11 @@ async def adm_details(callback: CallbackQuery, query_data: AdminCB) -> None:
 
 
 @router.callback_query(AdminCB.filter(F.action == "confirm"))
-async def adm_confirm(callback: CallbackQuery, query_data: AdminCB) -> None:
+async def adm_confirm(callback: CallbackQuery, callback_data: AdminCB) -> None:
     if not is_admin(callback.from_user.id):
         await callback.answer("⛔ Нет доступа", show_alert=True)
         return
-    pay = await db.get_payment(query_data.payment_id)
+    pay = await db.get_payment(callback_data.payment_id)
     if not pay or pay["status"] != "paid":
         await callback.message.edit_text(
             "❌ Чек недоступен для подтверждения.", reply_markup=admin_panel_kb()
@@ -121,11 +121,11 @@ async def adm_confirm(callback: CallbackQuery, query_data: AdminCB) -> None:
 
 
 @router.callback_query(AdminCB.filter(F.action == "cancel"))
-async def adm_cancel(callback: CallbackQuery, query_data: AdminCB) -> None:
+async def adm_cancel(callback: CallbackQuery, callback_data: AdminCB) -> None:
     if not is_admin(callback.from_user.id):
         await callback.answer("⛔ Нет доступа", show_alert=True)
         return
-    pay = await db.get_payment(query_data.payment_id)
+    pay = await db.get_payment(callback_data.payment_id)
     if not pay or pay["status"] not in ("pending", "paid"):
         await callback.message.edit_text(
             "❌ Чек недоступен для отмены.", reply_markup=admin_panel_kb()

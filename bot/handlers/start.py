@@ -1,4 +1,4 @@
-import logging
+﻿import logging
 
 from aiogram import F, Router
 from aiogram.filters import Command
@@ -119,8 +119,8 @@ async def _start_payment(message, amount: float, from_callback: bool = False) ->
 
 
 @router.callback_query(PayCB.filter(F.action == "check"))
-async def cb_check(callback: CallbackQuery, query_data: PayCB) -> None:
-    pay = await db.get_payment(query_data.payment_id)
+async def cb_check(callback: CallbackQuery, callback_data: PayCB) -> None:
+    pay = await db.get_payment(callback_data.payment_id)
     if not pay:
         await callback.message.edit_text(CHECK_NOT_FOUND)
         await callback.answer()
@@ -141,8 +141,8 @@ async def cb_check(callback: CallbackQuery, query_data: PayCB) -> None:
 
 
 @router.callback_query(PayCB.filter(F.action == "cancel_check"))
-async def cb_cancel_check(callback: CallbackQuery, query_data: PayCB) -> None:
-    pay = await db.get_payment(query_data.payment_id)
+async def cb_cancel_check(callback: CallbackQuery, callback_data: PayCB) -> None:
+    pay = await db.get_payment(callback_data.payment_id)
     if not pay:
         await callback.message.edit_text(CHECK_NOT_FOUND)
         await callback.answer()
@@ -159,8 +159,8 @@ async def cb_cancel_check(callback: CallbackQuery, query_data: PayCB) -> None:
 
 
 @router.callback_query(PayCB.filter(F.action == "my"))
-async def cb_my(callback: CallbackQuery, query_data: PayCB) -> None:
-    offset = query_data.page * 20
+async def cb_my(callback: CallbackQuery, callback_data: PayCB) -> None:
+    offset = callback_data.page * 20
     payments = await db.list_payments_by_user(callback.from_user.id, limit=21)
     payments = payments[offset : offset + 20]
     if not payments:
@@ -171,14 +171,14 @@ async def cb_my(callback: CallbackQuery, query_data: PayCB) -> None:
         return
     await callback.message.edit_text(
         "📄 <b>Ваши чеки:</b>",
-        reply_markup=my_checks_kb(payments, page=query_data.page),
+        reply_markup=my_checks_kb(payments, page=callback_data.page),
     )
     await callback.answer()
 
 
 @router.callback_query(PayCB.filter(F.action == "pay_details"))
-async def cb_pay_details(callback: CallbackQuery, query_data: PayCB) -> None:
-    pay = await db.get_payment(query_data.payment_id)
+async def cb_pay_details(callback: CallbackQuery, callback_data: PayCB) -> None:
+    pay = await db.get_payment(callback_data.payment_id)
     if not pay:
         await callback.message.edit_text(CHECK_NOT_FOUND)
         await callback.answer()
