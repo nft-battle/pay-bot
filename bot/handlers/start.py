@@ -6,11 +6,10 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, Message
 
-from ..config import AMOUNT_PRESETS, CRYPTO_ASSET, MAX_AMOUNT, MIN_AMOUNT
+from ..config import CRYPTO_ASSET, MAX_AMOUNT, MIN_AMOUNT
 from ..database import db
 from ..keyboards import (
     PayCB,
-    amount_kb,
     inline_pay_kb,
     main_menu_kb,
     my_checks_kb,
@@ -24,7 +23,6 @@ from ..texts import (
     CHECK_NOT_FOUND,
     CHECK_PAID_USER,
     CHECK_PENDING,
-    CHOOSE_AMOUNT_TEXT,
     CUSTOM_AMOUNT_PROMPT,
     PAYMENT_EXPIRED,
     WELCOME_TEXT,
@@ -57,13 +55,7 @@ async def cb_back_main(callback: CallbackQuery) -> None:
 
 
 @router.callback_query(PayCB.filter(F.action == "pay"))
-async def cb_pay(callback: CallbackQuery) -> None:
-    await callback.message.edit_text(CHOOSE_AMOUNT_TEXT, reply_markup=amount_kb())
-    await callback.answer()
-
-
-@router.callback_query(PayCB.filter(F.action == "custom"))
-async def cb_custom(callback: CallbackQuery, state: FSMContext) -> None:
+async def cb_pay(callback: CallbackQuery, state: FSMContext) -> None:
     await state.set_state(CustomFSM.amount)
     await callback.message.edit_text(
         CUSTOM_AMOUNT_PROMPT.format(min_amt=MIN_AMOUNT, max_amt=MAX_AMOUNT)
@@ -82,13 +74,6 @@ async def got_custom_amount(message: Message, state: FSMContext) -> None:
         return
     await state.clear()
     await _start_payment(message, amount)
-
-
-@router.callback_query(PayCB.filter(F.action == "amount"))
-async def cb_amount(callback: CallbackQuery, callback_data: PayCB) -> None:
-    await callback.message.edit_text(CHOOSE_AMOUNT_TEXT, reply_markup=amount_kb())
-    await callback.answer()
-    await _start_payment(callback.message, callback_data.amount, from_callback=True)
 
 
 async def _start_payment(message, amount: float, from_callback: bool = False) -> None:

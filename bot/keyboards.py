@@ -1,8 +1,6 @@
 from aiogram.filters.callback_data import CallbackData
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-from .config import AMOUNT_PRESETS
-
 STATUS_LABELS = {
     "pending": "⏳ Ожидает оплаты",
     "paid": "✅ Оплачен",
@@ -31,21 +29,7 @@ def main_menu_kb() -> InlineKeyboardMarkup:
     kb = [
         [InlineKeyboardButton(text="🛒 Оплатить", callback_data=PayCB(action="pay").pack())],
         [InlineKeyboardButton(text="📄 Мои чеки", callback_data=PayCB(action="my").pack())],
-        [InlineKeyboardButton(text="🛠 Админка", callback_data=AdminCB(action="panel").pack())],
     ]
-    return InlineKeyboardMarkup(inline_keyboard=kb)
-
-
-def amount_kb() -> InlineKeyboardMarkup:
-    kb = [
-        [
-            InlineKeyboardButton(text=f"💵 {a}", callback_data=PayCB(action="amount", amount=float(a)).pack())
-            for a in AMOUNT_PRESETS[i : i + 3]
-        ]
-        for i in range(0, len(AMOUNT_PRESETS), 3)
-    ]
-    kb.append([InlineKeyboardButton(text="✏️ Своя сумма", callback_data=PayCB(action="custom").pack())])
-    kb.append([InlineKeyboardButton(text="◀️ Назад", callback_data=PayCB(action="back_main").pack())])
     return InlineKeyboardMarkup(inline_keyboard=kb)
 
 

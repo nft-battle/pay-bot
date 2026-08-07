@@ -4,7 +4,6 @@ import logging
 from aiogram import Bot
 
 from ..database import db
-from ..utils import esc
 from .crypto_pay import crypto_pay
 from .notifications import client_paid, notify_paid
 
