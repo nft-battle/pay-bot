@@ -38,6 +38,8 @@ class PaymentPoller:
             logger.exception("Не удалось получить оплаченные инвойсы")
             return
         for inv in invoices:
+            if not isinstance(inv, dict):
+                continue
             inv_id = inv.get("invoice_id")
             if inv_id:
                 paid_ids.add(int(inv_id))

@@ -49,10 +49,14 @@ class CryptoPay:
 
     async def check_invoice(self, invoice_id: int) -> dict | None:
         result = await self._request("getInvoices", invoice_ids=str(invoice_id))
-        return result[0] if result else None
+        items = result.get("items", []) if isinstance(result, dict) else (result or [])
+        return items[0] if items else None
 
     async def get_paid_invoices(self) -> list[dict]:
-        return await self._request("getInvoices", status="paid")
+        result = await self._request("getInvoices", status="paid")
+        if isinstance(result, dict):
+            return result.get("items", [])
+        return result or []
 
     async def delete_invoice(self, invoice_id: int) -> None:
         await self._request("deleteInvoice", invoice_id=invoice_id)

@@ -1,6 +1,7 @@
 ﻿import logging
 
 from aiogram import F, Router
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
 
@@ -25,6 +26,16 @@ PAGE_SIZE = 10
 
 def is_admin(user_id: int) -> bool:
     return user_id in ADMIN_IDS
+
+
+async def _safe_edit(callback: CallbackQuery, text: str, reply_markup=None) -> None:
+    try:
+        await callback.message.edit_text(text, reply_markup=reply_markup)
+    except TelegramBadRequest as exc:
+        if "message is not modified" in str(exc).lower():
+            await callback.answer()
+            return
+        raise
 
 
 def _fmt_details(pay: dict) -> str:
@@ -60,7 +71,7 @@ async def adm_panel_cb(callback: CallbackQuery) -> None:
     if not is_admin(callback.from_user.id):
         await callback.answer("⛔ Нет доступа", show_alert=True)
         return
-    await callback.message.edit_text(ADMIN_PANEL_TEXT, reply_markup=admin_panel_kb())
+    await _safe_edit(callback, ADMIN_PANEL_TEXT, reply_markup=admin_panel_kb())
     await callback.answer()
 
 
@@ -68,11 +79,13 @@ async def _show_list(callback: CallbackQuery, status: str | None, page: int) -> 
     payments = await db.list_payments(status=status, limit=PAGE_SIZE * (page + 2))
     payments = payments[page * PAGE_SIZE : (page + 1) * PAGE_SIZE]
     if not payments:
-        await callback.message.edit_text(ADMIN_EMPTY, reply_markup=admin_panel_kb())
+        await _safe_edit(callback, ADMIN_EMPTY, reply_markup=admin_panel_kb())
         await callback.answer()
         return
-    await callback.message.edit_text(
-        "📋 <b>Список чеков</b>", reply_markup=admin_list_kb(payments, page=page, status=status or "")
+    await _safe_edit(
+        callback,
+        "📋 <b>Список чеков</b>",
+        reply_markup=admin_list_kb(payments, page=page, status=status or ""),
     )
     await callback.answer()
 
@@ -92,13 +105,10 @@ async def adm_details(callback: CallbackQuery, callback_data: AdminCB) -> None:
         return
     pay = await db.get_payment(callback_data.payment_id)
     if not pay:
-        await callback.message.edit_text("❌ Чек не найден.", reply_markup=admin_panel_kb())
+        await _safe_edit(callback, "❌ Чек не найден.", reply_markup=admin_panel_kb())
         await callback.answer()
         return
-    await callback.message.edit_text(
-        _fmt_details(pay),
-        reply_markup=admin_details_kb(pay["id"], pay["status"]),
-    )
+    await _safe_edit(callback, _fmt_details(pay), reply_markup=admin_details_kb(pay["id"], pay["status"]))
     await callback.answer()
 
 
@@ -109,8 +119,8 @@ async def adm_confirm(callback: CallbackQuery, callback_data: AdminCB) -> None:
         return
     pay = await db.get_payment(callback_data.payment_id)
     if not pay or pay["status"] != "paid":
-        await callback.message.edit_text(
-            "❌ Чек недоступен для подтверждения.", reply_markup=admin_panel_kb()
+        await _safe_edit(
+            callback, "❌ Чек недоступен для подтверждения.", reply_markup=admin_panel_kb()
         )
         await callback.answer()
         return
@@ -122,9 +132,7 @@ async def adm_confirm(callback: CallbackQuery, callback_data: AdminCB) -> None:
         )
     except Exception:
         logger.exception("Не удалось уведомить клиента %s", pay["user_id"])
-    await callback.message.edit_text(
-        f"🚀 Чек #{pay['id']} подтверждён.", reply_markup=admin_panel_kb()
-    )
+    await _safe_edit(callback, f"🚀 Чек #{pay['id']} подтверждён.", reply_markup=admin_panel_kb())
     await callback.answer()
 
 
@@ -135,8 +143,8 @@ async def adm_cancel(callback: CallbackQuery, callback_data: AdminCB) -> None:
         return
     pay = await db.get_payment(callback_data.payment_id)
     if not pay or pay["status"] not in ("pending", "paid"):
-        await callback.message.edit_text(
-            "❌ Чек недоступен для отмены.", reply_markup=admin_panel_kb()
+        await _safe_edit(
+            callback, "❌ Чек недоступен для отмены.", reply_markup=admin_panel_kb()
         )
         await callback.answer()
         return
@@ -152,9 +160,7 @@ async def adm_cancel(callback: CallbackQuery, callback_data: AdminCB) -> None:
         )
     except Exception:
         logger.exception("Не удалось уведомить клиента %s", pay["user_id"])
-    await callback.message.edit_text(
-        f"❌ Чек #{pay['id']} отменён.", reply_markup=admin_panel_kb()
-    )
+    await _safe_edit(callback, f"❌ Чек #{pay['id']} отменён.", reply_markup=admin_panel_kb())
     await callback.answer()
 
 
@@ -167,7 +173,8 @@ async def adm_stats(callback: CallbackQuery) -> None:
     total = sum(by_status.values())
     paid_amount = await db.total_amount_paid()
     users = await db.users_count()
-    await callback.message.edit_text(
+    await _safe_edit(
+        callback,
         STATS_TEXT.format(
             paid_amount=f"{paid_amount:,.2f}",
             total=total,
