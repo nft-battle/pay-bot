@@ -180,8 +180,3 @@ async def cb_pay_details(callback: CallbackQuery, callback_data: PayCB) -> None:
     )
     await callback.message.edit_text(text, reply_markup=main_menu_kb())
     await callback.answer()
-
-
-@router.message(F.text)
-async def fallback(message: Message) -> None:
-    await message.answer(WELCOME_TEXT, reply_markup=main_menu_kb())

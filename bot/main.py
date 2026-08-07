@@ -9,7 +9,7 @@ from aiogram.types import BotCommand
 
 from .config import BOT_TOKEN, PAYMENT_POLL_INTERVAL, PORT, WEBHOOK_SECRET, WEBHOOK_URL
 from .database import db
-from .handlers import admin, start
+from .handlers import admin, fallback, start
 from .services.payment_service import PaymentPoller
 
 logging.basicConfig(
@@ -74,7 +74,7 @@ async def main() -> None:
     bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp = Dispatcher()
 
-    dp.include_routers(start.router, admin.router)
+    dp.include_routers(start.router, admin.router, fallback.router)
 
     await bot.set_my_commands(COMMANDS)
 

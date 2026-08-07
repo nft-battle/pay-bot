@@ -47,6 +47,14 @@ async def cmd_admin(message: Message) -> None:
     await message.answer(ADMIN_PANEL_TEXT, reply_markup=admin_panel_kb())
 
 
+@router.message(F.text.lower().in_({"админ", "admin", "меню админа"}))
+async def cmd_admin_text(message: Message) -> None:
+    if not is_admin(message.from_user.id):
+        await message.answer(NOT_ADMIN)
+        return
+    await message.answer(ADMIN_PANEL_TEXT, reply_markup=admin_panel_kb())
+
+
 @router.callback_query(AdminCB.filter(F.action == "panel"))
 async def adm_panel_cb(callback: CallbackQuery) -> None:
     if not is_admin(callback.from_user.id):
