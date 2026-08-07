@@ -3,6 +3,7 @@ services:
     name: pay-bot
     runtime: python
     plan: free
+    pythonVersion: 3.12.8
     buildCommand: pip install -r requirements.txt
     startCommand: python -m bot
     healthCheckPath: /health
